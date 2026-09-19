@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FreshKicks Admin" />
+  <meta name="theme-color" content="#0C447C" />
+  <title>FreshKicks Admin</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #185FA5; --blue-dark: #0C447C; --blue-light: #E6F1FB;
+      --green-bg: #EAF3DE; --green: #3B6D11;
+      --amber-bg: #FAEEDA; --amber: #854F0B;
+      --red: #E24B4A; --red-bg: #FCEBEB;
+      --bg: #F0F4F8; --card: #FFFFFF;
+      --text: #1a1a1a; --muted: #888; --sub: #555; --border: rgba(0,0,0,0.08);
+      --safe-top: env(safe-area-inset-top, 44px); --safe-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); overflow: hidden; }
+
+    .splash { display: flex; position: fixed; inset: 0; background: var(--blue-dark); z-index: 600; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s; }
+    .splash-logo { font-size: 28px; font-weight: 800; color: white; }
+    .splash-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 6px; letter-spacing: 2px; }
+    .splash-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); animation: pulse 1.2s infinite; margin-top: 32px; }
+    @keyframes pulse { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:1;transform:scale(1.3)} }
+
+    .auth-screen { display: none; position: fixed; inset: 0; background: var(--blue-dark); z-index: 500; flex-direction: column; align-items: center; justify-content: center; padding: 40px 30px; }
+    .auth-screen.active { display: flex; }
+    .auth-logo { font-size: 24px; font-weight: 800; color: white; margin-bottom: 4px; }
+    .auth-badge { background: rgba(255,255,255,0.15); color: white; font-size: 11px; padding: 3px 12px; border-radius: 20px; margin-bottom: 32px; }
+    .auth-card { background: white; border-radius: 20px; padding: 24px; width: 100%; max-width: 360px; }
+    .auth-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+    .auth-input { width: 100%; background: var(--bg); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 14px; font-family: inherit; outline: none; margin-bottom: 10px; }
+    .auth-input:focus { border-color: var(--blue); }
+    .auth-btn { width: 100%; background: var(--blue-dark); color: white; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .auth-err { font-size: 12px; color: var(--red); text-align: center; margin-top: 8px; min-height: 18px; }
+
+    .app { width: 100vw; height: 100vh; height: 100dvh; display: flex; flex-direction: column; display: none; }
+    .app.show { display: flex; }
+
+    .header { background: var(--blue-dark); padding-top: var(--safe-top); flex-shrink: 0; }
+    .header-inner { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; }
+    .header-brand { font-size: 18px; font-weight: 800; color: white; }
+    .header-badge { font-size: 10px; background: rgba(255,255,255,0.2); color: white; padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header-name { font-size: 12px; color: rgba(255,255,255,0.7); }
+    .logout-btn { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .wa-status { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+    .wa-on  { background: var(--green-bg); color: var(--green); }
+    .wa-off { background: var(--red-bg); color: var(--red); }
+
+    .tab-nav { display: flex; background: var(--blue-dark); padding: 0 16px; border-bottom: none; flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .tab { padding: 10px 14px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+    .tab.active { color: white; border-bottom-color: white; }
+
+    .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 16px 16px calc(16px + var(--safe-bottom)); }
+    .content::-webkit-scrollbar { display: none; }
+
+    .tab-screen { display: none; }
+    .tab-screen.active { display: block; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-card { background: var(--card); border-radius: 14px; padding: 14px; border: 0.5px solid var(--border); }
+    .stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .stat-icon i { font-size: 18px; }
+    .stat-num { font-size: 24px; font-weight: 700; color: var(--text); }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .order-card { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 10px; border: 0.5px solid var(--border); }
+    .order-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .order-id { font-size: 11px; color: var(--muted); }
+    .order-name { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
+    .order-service { font-size: 12px; color: var(--sub); margin-top: 2px; }
+    .badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+    .badge-masuk    { background: var(--blue-light); color: var(--blue); }
+    .badge-inspeksi { background: #EDE9FE; color: #5B21B6; }
+    .badge-proses   { background: var(--amber-bg); color: var(--amber); }
+    .badge-kering   { background: #FEF3C7; color: #92400E; }
+    .badge-selesai  { background: var(--green-bg); color: var(--green); }
+    .badge-batal    { background: var(--red-bg); color: var(--red); }
+
+    .order-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .meta-chip { font-size: 11px; color: var(--sub); background: var(--bg); padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px; }
+    .meta-chip i { font-size: 12px; }
+
+    /* WA LOG */
+    .wa-log { font-size: 11px; color: var(--green); background: var(--green-bg); padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+    .wa-log-fail { color: var(--red); background: var(--red-bg); }
+
+    .status-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .status-btn { font-size: 11px; padding: 7px 12px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--bg); color: var(--sub); cursor: pointer; font-family: inherit; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+    .status-btn:active { opacity: 0.7; }
+    .status-btn.next-btn { background: var(--blue-dark); color: white; border-color: var(--blue-dark); font-weight: 600; }
+
+    .filter-row { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-pill { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 0.5px solid var(--border); color: var(--muted); cursor: pointer; background: var(--card); white-space: nowrap; -webkit-tap-highlight-color: transparent; transition: all 0.15s; }
+    .filter-pill.on { background: var(--blue); color: white; border-color: var(--blue); }
+
+    .section-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .section-count { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+    .empty i { font-size: 40px; display: block; margin-bottom: 10px; color: #ddd; }
+
+    .user-card { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 10px; border: 0.5px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .user-av { width: 40px; height: 40px; border-radius: 50%; background: var(--blue-light); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--blue); flex-shrink: 0; }
+    .user-pts { font-size: 12px; color: var(--blue); font-weight: 600; margin-left: auto; white-space: nowrap; }
+
+    .rev-big { background: var(--blue-dark); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+    .rev-label { font-size: 11px; color: rgba(255,255,255,0.6); }
+    .rev-amount { font-size: 32px; font-weight: 800; color: white; margin-top: 4px; }
+    .rev-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 6px; }
+
+    /* WA SETTINGS */
+    .settings-card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; border: 0.5px solid var(--border); }
+    .settings-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .settings-title i { font-size: 18px; color: #25D366; }
+    .wa-preview { background: #ECF8ED; border-radius: 12px; padding: 12px; font-size: 12px; color: #333; line-height: 1.6; border-left: 3px solid #25D366; margin-top: 10px; white-space: pre-wrap; }
+
+    /* WA LOG LIST */
+    .wa-log-item { background: var(--card); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; border: 0.5px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
+    .wa-log-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .wa-log-icon i { font-size: 15px; color: var(--green); }
+    .wa-log-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .wa-log-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .wa-log-time  { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+    .toast { position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; font-size: 13px; padding: 10px 20px; border-radius: 20px; z-index: 9999; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
+    .toast.show { opacity: 1; }
+
+    .loading { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 400; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
+    .loading.show { display: flex; }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--blue-light); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .loading-text { font-size: 13px; color: var(--muted); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: flex-end; justify-content: center; }
+    .modal-bg.show { display: flex; }
+    .modal { background: white; border-radius: 20px 20px 0 0; padding: 20px; width: 100%; max-width: 480px; padding-bottom: calc(20px + var(--safe-bottom)); }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .modal-close { float: right; font-size: 20px; color: var(--muted); cursor: pointer; }
+    .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+    .modal-status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .modal-status-btn { padding: 12px 8px; border-radius: 10px; border: 0.5px solid var(--border); background: var(--bg); text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--sub); -webkit-tap-highlight-color: transparent; transition: all 0.15s; }
+    .modal-status-btn.selected { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+    .modal-status-btn i { font-size: 20px; display: block; margin-bottom: 4px; }
+    .modal-wa-info { margin-top: 12px; background: #ECF8ED; border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #2d7a3a; display: flex; align-items: center; gap: 8px; }
+    .modal-wa-info i { font-size: 16px; flex-shrink: 0; }
+    .modal-save { width: 100%; background: var(--blue-dark); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <img src="logo.png" alt="FreshKicks.id" style="width:180px;object-fit:contain;" />
+  <div class="splash-sub" style="color:rgba(255,255,255,0.6);font-size:11px;letter-spacing:2px;margin-top:8px;">OWNER PANEL</div>
+  <div class="splash-dot"></div>
+</div>
+
+<div class="auth-screen" id="auth-screen">
+  <img src="logo.png" alt="FreshKicks.id" style="width:160px;object-fit:contain;margin-bottom:8px;" />
+  <div class="auth-badge">👑 Owner / Admin Panel</div>
+  <div class="auth-card">
+    <div class="auth-title">Login sebagai Admin</div>
+    <input class="auth-input" id="admin-email" type="email" placeholder="Email admin" />
+    <input class="auth-input" id="admin-pass" type="password" placeholder="Password" />
+    <button class="auth-btn" onclick="doAdminLogin()">Masuk ke Panel Admin</button>
+    <div class="auth-err" id="admin-err"></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="header">
+    <div class="header-inner">
+      <div>
+        <img src="logo.png" alt="FreshKicks" style="height:24px;object-fit:contain;" />
+        <span class="header-badge">ADMIN</span>
+      </div>
+      <div class="header-right">
+        <span class="wa-status wa-on" id="wa-status-badge">📱 WA Aktif</span>
+        <span class="header-name" id="admin-name">-</span>
+        <button class="logout-btn" onclick="doLogout()">Keluar</button>
+      </div>
+    </div>
+    <div class="tab-nav">
+      <div class="tab active" onclick="switchTab('dashboard',this)">📊 Dashboard</div>
+      <div class="tab" onclick="switchTab('orders',this)">📦 Order</div>
+      <div class="tab" onclick="switchTab('users',this)">👥 Pelanggan</div>
+      <div class="tab" onclick="switchTab('whatsapp',this)">💬 WhatsApp</div>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+
+    <!-- DASHBOARD -->
+    <div class="tab-screen active" id="tab-dashboard">
+      <div class="rev-big">
+        <div class="rev-label">Total pendapatan</div>
+        <div class="rev-amount" id="d-rev">Rp 0</div>
+        <div class="rev-sub">dari semua order selesai</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--blue-light);"><i class="ti ti-package" style="color:var(--blue);"></i></div>
+          <div class="stat-num" id="d-total">0</div>
+          <div class="stat-label">Total order</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--amber-bg);"><i class="ti ti-clock" style="color:var(--amber);"></i></div>
+          <div class="stat-num" id="d-pending">0</div>
+          <div class="stat-label">Perlu diproses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--green-bg);"><i class="ti ti-check" style="color:var(--green);"></i></div>
+          <div class="stat-num" id="d-selesai">0</div>
+          <div class="stat-label">Selesai</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EDE9FE;"><i class="ti ti-brand-whatsapp" style="color:#25D366;"></i></div>
+          <div class="stat-num" id="d-wa">0</div>
+          <div class="stat-label">WA terkirim</div>
+        </div>
+      </div>
+      <div class="section-title">Order masuk hari ini</div>
+      <div id="today-orders"><div class="empty"><i class="ti ti-package"></i>Belum ada order hari ini</div></div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="tab-screen" id="tab-orders">
+      <div class="filter-row">
+        <div class="filter-pill on" onclick="filterOrders('Semua',this)">Semua</div>
+        <div class="filter-pill" onclick="filterOrders('Masuk',this)">Masuk</div>
+        <div class="filter-pill" onclick="filterOrders('Inspeksi',this)">Inspeksi</div>
+        <div class="filter-pill" onclick="filterOrders('Proses',this)">Proses</div>
+        <div class="filter-pill" onclick="filterOrders('Pengeringan',this)">Pengeringan</div>
+        <div class="filter-pill" onclick="filterOrders('Selesai',this)">Selesai</div>
+      </div>
+      <div class="section-title">Daftar order <span class="section-count" id="orders-count">0 order</span></div>
+      <div id="all-orders-list"></div>
+    </div>
+
+    <!-- USERS -->
+    <div class="tab-screen" id="tab-users">
+      <div class="section-title">Daftar pelanggan <span class="section-count" id="users-count">0 user</span></div>
+      <div id="users-list"></div>
+    </div>
+
+    <!-- WHATSAPP -->
+    <div class="tab-screen" id="tab-whatsapp">
+      <div class="settings-card">
+        <div class="settings-title"><i class="ti ti-brand-whatsapp"></i> Konfigurasi Fonnte</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Notifikasi WA otomatis terkirim ke pelanggan setiap status order berubah.</div>
+        <div style="font-size:12px;color:var(--sub);margin-bottom:6px;font-weight:600;">Token Fonnte</div>
+        <div style="display:flex;gap:8px;">
+          <input id="wa-token-input" style="flex:1;background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;" value="jyQsHrKZpFuVKgfvvgMZ" type="password" />
+          <button onclick="testWA()" style="background:var(--blue-dark);color:white;border:none;border-radius:8px;padding:0 14px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;">Test WA</button>
+        </div>
+
+        <div style="margin-top:14px;font-size:12px;color:var(--sub);font-weight:600;margin-bottom:8px;">Nomor WA pelanggan (untuk test)</div>
+        <input id="wa-test-number" style="width:100%;background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;" placeholder="Contoh: 628123456789" />
+
+        <div style="margin-top:14px;font-size:12px;color:var(--sub);font-weight:600;">Preview pesan otomatis:</div>
+        <div class="wa-preview" id="wa-preview">🧹 *FreshKicks.id*
+
+Halo, [Nama Pelanggan]! 👋
+
+Update status pesanan kamu:
+
+📦 Sepatu: Nike Air Force 1
+🔄 Status: *Proses Cuci*
+
+Estimasi selesai: besok ya kak 😊
+
+Pantau real-time di app:
+🔗 https://freshkicks.netlify.app
+
+_Clean • Care • Every Step_ ✨</div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title"><i class="ti ti-list"></i> Template pesan per status</div>
+        <div style="font-size:12px;color:var(--muted);">Pesan ini otomatis dikirim saat lo update status order di panel.</div>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="background:var(--blue-light);color:var(--blue);padding:3px 8px;border-radius:6px;font-weight:600;">Masuk</span><span style="color:var(--sub);">→ "Pesanan diterima, segera diproses"</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="background:#EDE9FE;color:#5B21B6;padding:3px 8px;border-radius:6px;font-weight:600;">Inspeksi</span><span style="color:var(--sub);">→ "Sepatu sedang dicek kondisinya"</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="background:var(--amber-bg);color:var(--amber);padding:3px 8px;border-radius:6px;font-weight:600;">Proses</span><span style="color:var(--sub);">→ "Proses pencucian dimulai"</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="background:#FEF3C7;color:#92400E;padding:3px 8px;border-radius:6px;font-weight:600;">Pengeringan</span><span style="color:var(--sub);">→ "Hampir selesai, lagi dikeringkan"</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:6px;font-weight:600;">Selesai</span><span style="color:var(--sub);">→ "Sepatu siap diambil/dikirim!"</span></div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title"><i class="ti ti-history"></i> Log WA terkirim</div>
+        <div id="wa-log-list"><div class="empty" style="padding:20px;"><i class="ti ti-brand-whatsapp"></i>Belum ada WA terkirim</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL UPDATE STATUS -->
+<div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title">Update Status <span class="modal-close" onclick="closeModalDirect()">✕</span></div>
+    <div class="modal-sub" id="modal-info">-</div>
+    <div class="modal-status-grid">
+      <div class="modal-status-btn" onclick="selectStatus('Masuk',this)"><i class="ti ti-inbox"></i>Masuk</div>
+      <div class="modal-status-btn" onclick="selectStatus('Inspeksi',this)"><i class="ti ti-search"></i>Inspeksi</div>
+      <div class="modal-status-btn" onclick="selectStatus('Proses',this)"><i class="ti ti-droplet"></i>Proses cuci</div>
+      <div class="modal-status-btn" onclick="selectStatus('Pengeringan',this)"><i class="ti ti-wind"></i>Pengeringan</div>
+      <div class="modal-status-btn" onclick="selectStatus('Selesai',this)"><i class="ti ti-check"></i>Selesai</div>
+      <div class="modal-status-btn" onclick="selectStatus('Dibatalkan',this)"><i class="ti ti-x"></i>Batalkan</div>
+    </div>
+    <div class="modal-wa-info"><i class="ti ti-brand-whatsapp"></i> Notifikasi WA otomatis terkirim ke pelanggan setelah status diupdate.</div>
+    <button class="modal-save" onclick="saveStatus()">Simpan & Kirim WA ✓</button>
+  </div>
+</div>
+
+<div class="loading" id="loading"><div class="spinner"></div><div class="loading-text" id="loading-text">Memuat...</div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, onSnapshot, orderBy, query, updateDoc, doc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDnEA0cew7zUoFi-w0lpJro7WuIsTnR_bg",
+    authDomain: "freshkicks-46ae3.firebaseapp.com",
+    projectId: "freshkicks-46ae3",
+    storageBucket: "freshkicks-46ae3.firebasestorage.app",
+    messagingSenderId: "123914521736",
+    appId: "1:123914521736:web:0a6a28b86a7dfe3779e33d"
+  };
+
+  const fapp = initializeApp(firebaseConfig);
+  const auth = getAuth(fapp);
+  const db   = getFirestore(fapp);
+
+  let allOrders = [];
+  let allUsers  = {};
+  let currentFilter = 'Semua';
+  let modalOrderId = null;
+  let modalSelectedStatus = null;
+  let modalOrderData = null;
+  let waLogList = [];
+  let waSentCount = 0;
+
+  const FONNTE_TOKEN = 'jyQsHrKZpFuVKgfvvgMZ';
+  const APP_URL = 'https://freshkicks.netlify.app';
+
+  // WA MESSAGES PER STATUS
+  const waMessages = {
+    'Masuk':       (name, brand) => `🧹 *FreshKicks.id*\n\nHalo, ${name}! 👋\n\nPesanan kamu sudah kami terima!\n\n👟 Sepatu: *${brand}*\n📋 Status: *Pesanan Masuk*\n\nTim kami akan segera memproses sepatu kamu ya kak 😊\n\nPantau real-time:\n🔗 ${APP_URL}\n\n_Clean • Care • Every Step_ ✨`,
+    'Inspeksi':    (name, brand) => `🧹 *FreshKicks.id*\n\nHalo, ${name}! 👋\n\nUpdate pesanan kamu:\n\n👟 Sepatu: *${brand}*\n🔍 Status: *Inspeksi Awal*\n\nSepatu kamu sedang kami cek kondisinya & di-scan QR. Foto kondisi awal sudah direkam 📸\n\nPantau real-time:\n🔗 ${APP_URL}\n\n_Clean • Care • Every Step_ ✨`,
+    'Proses':      (name, brand) => `🧹 *FreshKicks.id*\n\nHalo, ${name}! 👋\n\nUpdate pesanan kamu:\n\n👟 Sepatu: *${brand}*\n🫧 Status: *Proses Pencucian*\n\nSepatu kamu sedang dicuci dengan bahan terbaik. Sabar ya kak, hasilnya pasti fresh! 💪\n\nPantau real-time:\n🔗 ${APP_URL}\n\n_Clean • Care • Every Step_ ✨`,
+    'Pengeringan': (name, brand) => `🧹 *FreshKicks.id*\n\nHalo, ${name}! 👋\n\nUpdate pesanan kamu:\n\n👟 Sepatu: *${brand}*\n💨 Status: *Pengeringan & QC*\n\nHampir selesai! Sepatu kamu lagi dikeringkan dan dicek kualitasnya ✅\n\nPantau real-time:\n🔗 ${APP_URL}\n\n_Clean • Care • Every Step_ ✨`,
+    'Selesai':     (name, brand) => `🧹 *FreshKicks.id*\n\nHalo, ${name}! 👋\n\n✅ *Pesanan selesai!*\n\n👟 Sepatu: *${brand}*\n🎉 Status: *Siap Diambil / Dikirim!*\n\nSepatu kamu udah fresh dan siap kak! Segera ambil atau tunggu kurir kami ya 🚀\n\nTerima kasih sudah percaya FreshKicks.id! ❤️\n\nPantau real-time:\n🔗 ${APP_URL}\n\n_Clean • Care • Every Step_ ✨`,
+    'Dibatalkan':  (name, brand) => `🧹 *FreshKicks.id*\n\nHalo, ${name}! 👋\n\nPesanan kamu untuk *${brand}* telah dibatalkan.\n\nJika ada pertanyaan, hubungi kami ya kak 🙏\n\n_Clean • Care • Every Step_ ✨`,
+  };
+
+  // SPLASH
+  setTimeout(() => {
+    document.getElementById('splash').style.opacity = '0';
+    setTimeout(() => document.getElementById('splash').style.display = 'none', 400);
+  }, 1600);
+
+  // AUTH
+  onAuthStateChanged(auth, async user => {
+    if (user) {
+      document.getElementById('auth-screen').classList.remove('active');
+      document.getElementById('app').classList.add('show');
+      const snap = await getDoc(doc(db,'users',user.uid));
+      const name = snap.exists() ? snap.data().name : user.email;
+      document.getElementById('admin-name').textContent = name.split(' ')[0];
+      await loadUsers();
+      listenOrders();
+    } else {
+      document.getElementById('app').classList.remove('show');
+      document.getElementById('auth-screen').classList.add('active');
+    }
+  });
+
+  window.doAdminLogin = async function() {
+    const email = document.getElementById('admin-email').value.trim();
+    const pass  = document.getElementById('admin-pass').value;
+    const err   = document.getElementById('admin-err');
+    if (!email||!pass) { err.textContent='Email & password wajib diisi'; return; }
+    showLoading('Masuk...');
+    try { await signInWithEmailAndPassword(auth, email, pass); err.textContent=''; }
+    catch(e) { err.textContent='Email atau password salah'; }
+    finally { hideLoading(); }
+  };
+
+  window.doLogout = async function() { showLoading('Keluar...'); await signOut(auth); hideLoading(); };
+
+  // LOAD USERS
+  async function loadUsers() {
+    const snap = await getDocs(collection(db,'users'));
+    snap.docs.forEach(d => { allUsers[d.id] = d.data(); });
+    renderUsers(snap.docs.map(d=>({id:d.id,...d.data()})));
+  }
+
+  function renderUsers(users) {
+    document.getElementById('users-count').textContent = users.length + ' user';
+    const el = document.getElementById('users-list');
+    if (!users.length) { el.innerHTML='<div class="empty"><i class="ti ti-users"></i>Belum ada pelanggan</div>'; return; }
+    el.innerHTML = users.map(u => {
+      const init = (u.name||'U').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+      return `<div class="user-card">
+        <div class="user-av">${init}</div>
+        <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:var(--text);">${u.name||'-'}</div><div style="font-size:12px;color:var(--muted);margin-top:2px;">${u.email||'-'}</div>${u.phone?`<div style="font-size:12px;color:var(--sub);margin-top:2px;">📱 ${u.phone}</div>`:''}</div>
+        <div class="user-pts"><i class="ti ti-award" style="font-size:12px;vertical-align:-1px;"></i> ${u.points||0} poin</div>
+      </div>`;
+    }).join('');
+  }
+
+  // LISTEN ORDERS
+  function listenOrders() {
+    const q = query(collection(db,'orders'), orderBy('createdAt','desc'));
+    onSnapshot(q, snap => {
+      allOrders = snap.docs.map(d=>({id:d.id,...d.data()}));
+      updateDashboard();
+      renderOrders(currentFilter);
+      renderTodayOrders();
+    });
+  }
+
+  function updateDashboard() {
+    const total   = allOrders.length;
+    const selesai = allOrders.filter(o=>o.status==='Selesai').length;
+    const pending = allOrders.filter(o=>o.status!=='Selesai'&&o.status!=='Dibatalkan').length;
+    const rev     = allOrders.filter(o=>o.status==='Selesai').reduce((a,o)=>a+(o.total||0),0);
+    document.getElementById('d-total').textContent   = total;
+    document.getElementById('d-selesai').textContent = selesai;
+    document.getElementById('d-pending').textContent = pending;
+    document.getElementById('d-rev').textContent     = 'Rp '+rev.toLocaleString('id-ID');
+    document.getElementById('d-wa').textContent      = waSentCount;
+    document.getElementById('orders-count').textContent = allOrders.length+' order';
+  }
+
+  function renderTodayOrders() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const list = allOrders.filter(o => {
+      if (!o.createdAt) return false;
+      return (o.createdAt.toDate?o.createdAt.toDate():new Date(o.createdAt)) >= today;
+    });
+    const el = document.getElementById('today-orders');
+    if (!list.length) { el.innerHTML='<div class="empty"><i class="ti ti-package"></i>Belum ada order hari ini</div>'; return; }
+    el.innerHTML = list.map(o=>orderCardHTML(o)).join('');
+  }
+
+  window.filterOrders = function(filter, el) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('on'));
+    el.classList.add('on');
+    renderOrders(filter);
+  };
+
+  function renderOrders(filter) {
+    const list = filter==='Semua' ? allOrders : allOrders.filter(o=>o.status===filter);
+    document.getElementById('orders-count').textContent = list.length+' order';
+    const el = document.getElementById('all-orders-list');
+    if (!list.length) { el.innerHTML='<div class="empty"><i class="ti ti-package"></i>Tidak ada order</div>'; return; }
+    el.innerHTML = list.map(o=>orderCardHTML(o)).join('');
+  }
+
+  function orderCardHTML(o) {
+    const d = o.createdAt?.toDate ? o.createdAt.toDate() : new Date();
+    const dateStr = d.toLocaleDateString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    const badgeCls = {'Masuk':'badge-masuk','Inspeksi':'badge-inspeksi','Proses':'badge-proses','Pengeringan':'badge-kering','Selesai':'badge-selesai','Dibatalkan':'badge-batal'}[o.status]||'badge-masuk';
+    const nextStatus = {'Masuk':'Inspeksi','Inspeksi':'Proses','Proses':'Pengeringan','Pengeringan':'Selesai'}[o.status];
+    const user = allUsers[o.uid];
+    return `<div class="order-card">
+      <div class="order-top">
+        <div>
+          <div class="order-id">#${o.id.slice(-8).toUpperCase()} · ${dateStr}</div>
+          <div class="order-name">${o.brand||'Sepatu'}</div>
+          <div class="order-service">${o.service} · ${o.type||''}</div>
+          ${user?`<div class="order-service" style="margin-top:3px;">👤 ${user.name||'-'}</div>`:''}
+        </div>
+        <span class="badge ${badgeCls}">${o.status}</span>
+      </div>
+      <div class="order-meta">
+        <div class="meta-chip"><i class="ti ti-truck"></i>${o.delivery||'-'}</div>
+        ${o.alamat ? `<div class="meta-chip"><i class="ti ti-map-pin"></i>${o.alamat.street}, ${o.alamat.city}</div>` : ''}
+        <div class="meta-chip"><i class="ti ti-coin"></i>Rp ${(o.total||0).toLocaleString('id-ID')}</div>
+        ${o.note?`<div class="meta-chip"><i class="ti ti-note"></i>${o.note}</div>`:''}
+      </div>
+      <div class="status-btns">
+        ${nextStatus&&o.status!=='Dibatalkan'?`<button class="status-btn next-btn" onclick="quickUpdate('${o.id}','${nextStatus}','${o.brand||'Sepatu'}','${o.uid}')">→ ${nextStatus} + WA</button>`:''}
+        <button class="status-btn" onclick="openModal('${o.id}','${(o.brand||'Sepatu').replace(/'/g,"\\'")}','${o.status}','${o.uid}')">✏️ Ubah status</button>
+      </div>
+    </div>`;
+  }
+
+  // SEND WA
+  async function sendWA(phone, message) {
+    if (!phone) return false;
+    const cleanPhone = phone.replace(/\D/g,'');
+    try {
+      const resp = await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: { 'Authorization': FONNTE_TOKEN },
+        body: new URLSearchParams({ target: cleanPhone, message, countryCode: '62' })
+      });
+      const data = await resp.json();
+      return data.status === true;
+    } catch(e) { return false; }
+  }
+
+  function addWALog(name, phone, status, success) {
+    if (success) waSentCount++;
+    document.getElementById('d-wa').textContent = waSentCount;
+    const log = { name, phone, status, success, time: new Date() };
+    waLogList.unshift(log);
+    const el = document.getElementById('wa-log-list');
+    if (el.querySelector('.empty')) el.innerHTML = '';
+    const item = document.createElement('div');
+    item.className = 'wa-log-item';
+    item.innerHTML = `
+      <div class="wa-log-icon" style="${success?'':'background:var(--red-bg);'}">
+        <i class="ti ti-brand-whatsapp" style="${success?'':'color:var(--red);'}"></i>
+      </div>
+      <div>
+        <div class="wa-log-title">${success?'✓':'✗'} WA ke ${name}</div>
+        <div class="wa-log-desc">Status: ${status} · ${phone||'No HP tidak tersedia'}</div>
+        <div class="wa-log-time">${log.time.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>`;
+    el.insertBefore(item, el.firstChild);
+  }
+
+  // MODAL
+  window.openModal = function(orderId, brand, status, uid) {
+    modalOrderId = orderId;
+    modalSelectedStatus = status;
+    modalOrderData = { brand, uid };
+    document.getElementById('modal-info').textContent = brand + ' · Status saat ini: ' + status;
+    document.querySelectorAll('.modal-status-btn').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('modal-bg').classList.add('show');
+  };
+
+  window.selectStatus = function(status, el) {
+    modalSelectedStatus = status;
+    document.querySelectorAll('.modal-status-btn').forEach(b=>b.classList.remove('selected'));
+    el.classList.add('selected');
+  };
+
+  window.closeModal = function(e) { if(e.target===document.getElementById('modal-bg')) closeModalDirect(); };
+  window.closeModalDirect = function() { document.getElementById('modal-bg').classList.remove('show'); };
+
+  window.saveStatus = async function() {
+    if (!modalOrderId||!modalSelectedStatus) { showToast('Pilih status dulu!'); return; }
+    showLoading('Update status + kirim WA...');
+    try {
+      const orderData = allOrders.find(o => o.id === modalOrderId);
+      await updateDoc(doc(db,'orders',modalOrderId), { status: modalSelectedStatus });
+      closeModalDirect();
+      const phone = orderData?.phone || '';
+      const nama  = orderData?.customerName || 'Kak';
+      const brand = orderData?.brand || 'Sepatu';
+      const msg   = waMessages[modalSelectedStatus]?.(nama, brand);
+      const ok    = phone ? await sendWA(phone, msg) : false;
+      addWALog(nama, phone, modalSelectedStatus, ok);
+      showToast(ok ? '✓ Status updated + WA terkirim! 📱' : '✓ Status updated (no WA belum diisi saat booking)');
+    } catch(e) { showToast('Gagal update status'); }
+    finally { hideLoading(); }
+  };
+
+  window.quickUpdate = async function(orderId, status, brand, uid) {
+    showLoading('Update + kirim WA...');
+    try {
+      const orderData = allOrders.find(o => o.id === orderId);
+      await updateDoc(doc(db,'orders',orderId), { status });
+      const phone = orderData?.phone || '';
+      const nama  = orderData?.customerName || 'Kak';
+      const msg   = waMessages[status]?.(nama, brand||'Sepatu');
+      const ok    = phone ? await sendWA(phone, msg) : false;
+      addWALog(nama, phone, status, ok);
+      showToast(ok ? `✓ → ${status} + WA terkirim! 📱` : `✓ → ${status} (no WA belum diisi saat booking)`);
+    } catch(e) { showToast('Gagal update'); }
+    finally { hideLoading(); }
+  };
+
+  // TEST WA
+  window.testWA = async function() {
+    const phone = document.getElementById('wa-test-number').value.trim();
+    if (!phone) { showToast('Masukkan nomor WA dulu!'); return; }
+    showLoading('Kirim WA test...');
+    const msg = waMessages['Proses']('Test User', 'Nike Air Force 1');
+    const ok = await sendWA(phone, msg);
+    hideLoading();
+    showToast(ok ? '✓ WA test berhasil terkirim! 📱' : '✗ Gagal kirim WA, cek token & nomor');
+    addWALog('Test', phone, 'Test', ok);
+  };
+
+  // LOADING & TOAST
+  function showLoading(text) { document.getElementById('loading-text').textContent=text||'Memuat...'; document.getElementById('loading').classList.add('show'); }
+  function hideLoading() { document.getElementById('loading').classList.remove('show'); }
+  let toastTimer;
+  window.showToast = function(msg) {
+    const t = document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+  };
+</script>
+
+<script>
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab-screen').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    el.classList.add('active');
+    document.getElementById('content').scrollTop = 0;
+  }
+</script>
+
+</body>
+</html>

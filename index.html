@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FreshKicks" />
+  <meta name="theme-color" content="#185FA5" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>FreshKicks.id</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #185FA5; --blue-light: #E6F1FB; --blue-mid: #B5D4F4; --blue-dark: #0C447C;
+      --green-bg: #EAF3DE; --green: #3B6D11; --amber-bg: #FAEEDA; --amber: #854F0B;
+      --red: #E24B4A; --bg: #F5F5F5; --card: #FFFFFF;
+      --text: #1a1a1a; --muted: #888; --sub: #555; --border: rgba(0,0,0,0.08);
+      --safe-top: env(safe-area-inset-top, 44px); --safe-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); overflow: hidden; }
+    .app { width: 100vw; height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); position: relative; overflow: hidden; }
+    .status-spacer { height: var(--safe-top); background: var(--blue); flex-shrink: 0; }
+    .status-spacer.white { background: var(--bg); }
+    .screen-wrap { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: calc(68px + var(--safe-bottom)); }
+    .screen-wrap::-webkit-scrollbar { display: none; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .nav { display: flex; justify-content: space-around; align-items: center; padding: 10px 0; padding-bottom: calc(10px + var(--safe-bottom)); background: var(--card); border-top: 0.5px solid var(--border); flex-shrink: 0; position: relative; z-index: 100; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; color: var(--muted); font-size: 9px; padding: 0 8px; transition: color 0.15s; -webkit-tap-highlight-color: transparent; }
+    .nav-item i { font-size: 22px; }
+    .nav-item.active { color: var(--blue); }
+    .nav-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--blue); margin-top: 1px; opacity: 0; }
+    .nav-item.active .nav-dot { opacity: 1; }
+
+    /* REUSABLE */
+    .card { background: var(--card); border: 0.5px solid var(--border); border-radius: 16px; }
+    .badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
+    .badge-process { background: var(--amber-bg); color: var(--amber); }
+    .badge-done    { background: var(--green-bg);  color: var(--green); }
+    .badge-pickup  { background: var(--blue-light); color: var(--blue); }
+    .btn { width: 100%; background: var(--blue); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; transition: opacity 0.1s; }
+    .btn:active { opacity: 0.8; }
+    .btn-ghost { background: var(--card); color: var(--text); border: 0.5px solid var(--border); }
+    .btn-outline { font-size: 12px; padding: 6px 12px; border: 0.5px solid var(--blue); color: var(--blue); border-radius: 20px; background: transparent; cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+    .btn-red { background: #FCEBEB; color: var(--red); }
+    .section-title { font-size: 15px; font-weight: 600; color: var(--text); padding: 18px 20px 10px; display: flex; justify-content: space-between; align-items: center; }
+    .see-all { font-size: 12px; color: var(--blue); cursor: pointer; }
+    .form-label { font-size: 12px; color: var(--sub); font-weight: 500; margin-bottom: 6px; display: block; }
+    .form-input, .form-select { width: 100%; background: var(--bg); border: 0.5px solid var(--border); border-radius: 8px; padding: 11px 12px; font-size: 14px; color: var(--text); font-family: inherit; outline: none; -webkit-appearance: none; appearance: none; }
+    .form-input:focus, .form-select:focus { border-color: var(--blue); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* AUTH SCREEN */
+    .auth-screen { display: none; position: fixed; inset: 0; background: var(--blue); z-index: 500; flex-direction: column; align-items: center; justify-content: center; padding: 40px 30px; }
+    .auth-screen.active { display: flex; }
+    .auth-logo { font-size: 28px; font-weight: 800; color: white; margin-bottom: 6px; }
+    .auth-logo span { color: rgba(255,255,255,0.55); font-weight: 400; }
+    .auth-tagline { font-size: 13px; color: rgba(255,255,255,0.65); margin-bottom: 40px; }
+    .auth-card { background: white; border-radius: 20px; padding: 24px; width: 100%; max-width: 360px; }
+    .auth-tabs { display: flex; gap: 0; margin-bottom: 20px; background: var(--bg); border-radius: 10px; padding: 3px; }
+    .auth-tab { flex: 1; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-radius: 8px; transition: all 0.15s; }
+    .auth-tab.active { background: white; color: var(--blue); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+    .auth-input { width: 100%; background: var(--bg); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; font-size: 14px; font-family: inherit; outline: none; margin-bottom: 10px; }
+    .auth-input:focus { border-color: var(--blue); }
+    .auth-btn { width: 100%; background: var(--blue); color: white; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 4px; }
+    .auth-err { font-size: 12px; color: var(--red); text-align: center; margin-top: 8px; min-height: 18px; }
+
+    /* SPLASH */
+    .splash { display: flex; position: fixed; inset: 0; background: var(--blue); z-index: 600; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.4s; }
+    .splash-logo { font-size: 36px; font-weight: 800; color: white; }
+    .splash-logo span { color: rgba(255,255,255,0.55); font-weight: 400; }
+    .splash-sub { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 8px; letter-spacing: 2px; }
+    .splash-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); animation: pulse 1.2s infinite; margin-top: 40px; }
+    @keyframes pulse { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:1;transform:scale(1.3)} }
+
+    /* HOME */
+    .home-header { background: var(--blue); padding: 16px 20px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .home-brand { font-size: 22px; font-weight: 700; color: white; }
+    .home-brand span { color: rgba(255,255,255,0.6); font-weight: 400; }
+    .home-sub { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+    .avatar { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 700; flex-shrink: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .hero { margin: 16px 20px; border-radius: 16px; background: var(--blue-dark); padding: 20px; overflow: hidden; position: relative; }
+    .hero::before { content: ''; position: absolute; right: -30px; top: -30px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.06); }
+    .hero-tag { font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 0.5px; margin-bottom: 6px; }
+    .hero-title { font-size: 18px; font-weight: 700; color: white; line-height: 1.35; }
+    .hero-btn { margin-top: 14px; display: inline-block; background: white; color: var(--blue); font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 20px; cursor: pointer; border: none; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 20px; margin-top: 0; }
+    .stat-card { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px 8px; text-align: center; }
+    .stat-num { font-size: 22px; font-weight: 700; color: var(--text); }
+    .stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .service-scroll { display: flex; gap: 10px; padding: 0 20px 4px; overflow-x: auto; scrollbar-width: none; }
+    .service-scroll::-webkit-scrollbar { display: none; }
+    .service-card { flex: 0 0 120px; background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .service-card:active { border-color: var(--blue); }
+    .svc-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--blue-light); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+    .svc-icon i { font-size: 18px; color: var(--blue); }
+    .svc-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .svc-price { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .order-card { margin: 0 20px 10px; background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .order-card:active { background: var(--bg); }
+    .order-icon { width: 42px; height: 42px; border-radius: 10px; background: var(--blue-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .order-icon i { font-size: 20px; color: var(--blue); }
+    .order-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .order-id { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* BOOKING */
+    .booking-hdr { background: var(--blue); padding: 16px 20px 28px; }
+    .bk-step { font-size: 12px; color: rgba(255,255,255,0.6); }
+    .bk-title { font-size: 20px; font-weight: 700; color: white; margin-top: 4px; }
+    .bk-sub { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+    .step-bars { display: flex; gap: 6px; margin-top: 14px; }
+    .step-bar { height: 4px; border-radius: 2px; flex: 1; background: rgba(255,255,255,0.3); transition: background 0.3s; }
+    .step-bar.active { background: white; }
+    .bk-body { padding: 14px 20px 0; }
+    .form-card { background: var(--card); border: 0.5px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill { padding: 7px 13px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--border); color: var(--sub); cursor: pointer; background: var(--bg); transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+    .pill.on { background: var(--blue); color: white; border-color: var(--blue); }
+    .delv-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .delv-opt { border: 0.5px solid var(--border); border-radius: 10px; padding: 10px; cursor: pointer; text-align: center; background: var(--bg); transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+    .delv-opt.on { border-color: var(--blue); background: var(--blue-light); }
+    .delv-opt i { font-size: 20px; color: var(--muted); display: block; }
+    .delv-opt.on i { color: var(--blue); }
+    .delv-lbl { font-size: 11px; color: var(--sub); margin-top: 4px; line-height: 1.4; }
+    .delv-opt.on .delv-lbl { color: var(--blue); }
+    .btn-row { display: flex; gap: 10px; margin-bottom: 12px; }
+
+    /* TRACKING */
+    .track-hdr { background: var(--blue); padding: 16px 20px 32px; }
+    .track-title { font-size: 20px; font-weight: 700; color: white; margin-top: 4px; }
+    .track-sub { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+    .qr-card { margin: -14px 20px 0; background: var(--card); border: 0.5px solid var(--border); border-radius: 16px; padding: 12px; position: relative; z-index: 10; }
+    .qr-row { display: flex; gap: 8px; }
+    .qr-row .form-input { flex: 1; }
+    .qr-btn { background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 14px; cursor: pointer; font-size: 13px; font-family: inherit; white-space: nowrap; display: flex; align-items: center; gap: 4px; -webkit-tap-highlight-color: transparent; }
+    .track-card { margin: 12px 20px 0; background: var(--card); border: 0.5px solid var(--border); border-radius: 16px; padding: 14px; }
+    .shoe-row { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 0.5px solid var(--border); }
+    .shoe-img { width: 52px; height: 52px; border-radius: 10px; background: var(--blue-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .shoe-img i { font-size: 26px; color: var(--blue); }
+    .shoe-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .shoe-id { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .qr-tag { margin-left: auto; font-size: 10px; color: var(--blue); border: 0.5px solid var(--blue-mid); border-radius: 6px; padding: 4px 8px; display: flex; align-items: center; gap: 3px; flex-shrink: 0; cursor: pointer; }
+    .timeline { padding-left: 2px; }
+    .tl-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; position: relative; }
+    .tl-item:not(:last-child)::before { content: ''; position: absolute; left: 11px; top: 24px; width: 0.5px; height: calc(100% + 2px); background: var(--border); }
+    .tl-dot { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+    .done    { background: var(--blue); }
+    .act  { background: var(--green-bg); border: 2px solid var(--green); }
+    .pend { background: #f0f0f0; border: 0.5px solid var(--border); }
+    .done i    { font-size: 12px; color: white; }
+    .act i  { font-size: 12px; color: var(--green); }
+    .pend i { font-size: 12px; color: var(--muted); }
+    .tl-step { font-size: 13px; font-weight: 600; color: var(--text); }
+    .tl-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .tl-desc { font-size: 12px; color: var(--sub); margin-top: 3px; }
+    .empty-orders { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+
+    /* DASHBOARD */
+    .dash-hdr { padding: 16px 20px 0; }
+    .dash-greeting { font-size: 13px; color: var(--muted); }
+    .dash-title { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 2px; }
+    .rev-card { margin: 14px 20px 0; background: var(--blue); border-radius: 16px; padding: 16px; }
+    .rev-label { font-size: 11px; color: rgba(255,255,255,0.65); }
+    .rev-amount { font-size: 26px; font-weight: 700; color: white; margin-top: 4px; }
+    .rev-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 6px; }
+    .rev-up { color: #9FE1CB; font-weight: 700; }
+    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 20px 0; }
+    .dash-mini { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; }
+    .dm-label { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    .dm-label i { font-size: 13px; }
+    .dm-num { font-size: 22px; font-weight: 700; color: var(--text); margin-top: 6px; }
+    .dm-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .chart-card { margin: 12px 20px 0; background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px; }
+    .chart-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 72px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .bar { width: 100%; border-radius: 4px 4px 0 0; background: #E8EDF2; }
+    .bar.hi { background: var(--blue); }
+    .bar-lbl { font-size: 9px; color: var(--muted); }
+    .stock-card { margin: 12px 20px 0; background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px; }
+    .stock-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .stock-item:last-child { margin-bottom: 0; }
+    .stock-name { font-size: 13px; color: var(--text); flex: 1; }
+    .stock-bar-bg { width: 80px; height: 6px; background: #eee; border-radius: 3px; }
+    .stock-bar { height: 6px; border-radius: 3px; }
+    .stock-pct { font-size: 11px; color: var(--muted); min-width: 30px; text-align: right; }
+    .staff-card { margin: 12px 20px 0; background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 14px; }
+    .staff-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .staff-row:last-child { margin-bottom: 0; }
+    .s-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; flex-shrink: 0; }
+    .s-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .s-role { font-size: 11px; color: var(--muted); }
+    .s-count { margin-left: auto; font-size: 12px; color: var(--blue); font-weight: 600; }
+
+    /* LOYALTY */
+    .loy-hdr { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 0; }
+    .loy-banner { margin: 14px 20px 0; background: var(--blue); border-radius: 16px; padding: 16px; }
+    .loy-pts { font-size: 36px; font-weight: 700; color: white; }
+    .loy-label { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+    .prog-labels { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,0.6); margin: 12px 0 6px; }
+    .prog-bg { background: rgba(255,255,255,0.2); border-radius: 20px; height: 8px; }
+    .prog-fill { background: white; border-radius: 20px; height: 8px; transition: width 0.5s; }
+    .loy-tier { font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 8px; text-align: right; }
+    .reward-scroll { display: flex; gap: 10px; padding: 4px 20px; overflow-x: auto; scrollbar-width: none; }
+    .reward-scroll::-webkit-scrollbar { display: none; }
+    .reward-card { flex: 0 0 115px; background: var(--card); border: 0.5px solid var(--border); border-radius: 14px; padding: 12px; text-align: center; }
+    .rw-badge { font-size: 10px; color: var(--blue); background: var(--blue-light); border-radius: 12px; padding: 3px 8px; display: inline-block; margin-bottom: 8px; }
+    .rw-emoji { font-size: 26px; display: block; margin-bottom: 6px; }
+    .rw-name { font-size: 11px; color: var(--sub); line-height: 1.3; }
+    .hist-item { margin: 0 20px 10px; background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+    .hist-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--blue-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .hist-icon i { font-size: 16px; color: var(--blue); }
+    .hist-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .hist-desc { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+    .hist-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+    /* PROFILE */
+    .prof-hdr { background: var(--blue); padding: 16px 20px 36px; text-align: center; }
+    .prof-av { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.2); margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: white; }
+    .prof-name { font-size: 18px; font-weight: 700; color: white; }
+    .prof-email { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 3px; }
+    .prof-tier { display: inline-block; margin-top: 10px; background: rgba(255,255,255,0.15); color: white; font-size: 11px; padding: 4px 14px; border-radius: 20px; }
+    .prof-menu { margin: -14px 20px 0; }
+    .menu-card { background: var(--card); border: 0.5px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 12px; }
+    .menu-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 0.5px solid var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.1s; }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:active { background: var(--bg); }
+    .menu-ico { width: 34px; height: 34px; border-radius: 8px; background: var(--blue-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .menu-ico i { font-size: 17px; color: var(--blue); }
+    .menu-lbl { font-size: 14px; color: var(--text); flex: 1; }
+    .menu-arr { font-size: 16px; color: var(--muted); }
+    .menu-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+
+    /* LOADING OVERLAY */
+    .loading { position: fixed; inset: 0; background: rgba(255,255,255,0.85); z-index: 400; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .loading.show { display: flex; }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--blue-light); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 13px; color: var(--muted); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; font-size: 13px; padding: 10px 20px; border-radius: 20px; z-index: 9999; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.25s; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div class="splash" id="splash">
+  <img src="logo.png" alt="FreshKicks.id" style="width:220px;object-fit:contain;" />
+  <div class="splash-dot" style="margin-top:32px;"></div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="auth-screen">
+  <img src="logo.png" alt="FreshKicks.id" style="width:180px;object-fit:contain;margin-bottom:8px;" />
+  <div class="auth-tagline" style="color:rgba(255,255,255,0.65);font-size:13px;margin-bottom:32px;">Cuci sepatu modern, serba digital</div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuth('login')">Masuk</div>
+      <div class="auth-tab" onclick="switchAuth('register')">Daftar</div>
+    </div>
+    <!-- Login -->
+    <div class="auth-form active" id="auth-login">
+      <input class="auth-input" id="login-email" type="email" placeholder="Email" />
+      <input class="auth-input" id="login-pass" type="password" placeholder="Password" />
+      <button class="auth-btn" onclick="doLogin()">Masuk</button>
+      <div class="auth-err" id="login-err"></div>
+    </div>
+    <!-- Register -->
+    <div class="auth-form" id="auth-register">
+      <input class="auth-input" id="reg-name" type="text" placeholder="Nama lengkap" />
+      <input class="auth-input" id="reg-email" type="email" placeholder="Email" />
+      <input class="auth-input" id="reg-pass" type="password" placeholder="Password (min 6 karakter)" />
+      <button class="auth-btn" onclick="doRegister()">Daftar</button>
+      <div class="auth-err" id="reg-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="main-app" style="display:none;">
+  <div class="status-spacer" id="status-spacer"></div>
+  <div class="screen-wrap" id="screen-wrap">
+
+    <!-- HOME -->
+    <div class="screen active" id="screen-home">
+      <div class="home-header">
+        <div>
+          <img src="logo.png" alt="FreshKicks.id" style="height:28px;object-fit:contain;" />
+          <div class="home-sub" id="home-greeting">Hai 👋</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <i class="ti ti-bell" style="font-size:22px;color:rgba(255,255,255,0.8);cursor:pointer;" onclick="showToast('Tidak ada notifikasi baru')"></i>
+          <div class="avatar" id="home-avatar" onclick="switchScreen('profile')">?</div>
+        </div>
+      </div>
+      <div style="padding:16px 20px 0;">
+        <div class="stats-grid" style="margin:0;">
+          <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total order</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:var(--blue);" id="stat-proses">0</div><div class="stat-label">Sedang proses</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:var(--green);" id="home-pts">0</div><div class="stat-label">Poin kamu</div></div>
+        </div>
+      </div>
+      <div class="hero" style="margin-top:14px;">
+        <div class="hero-tag">🔥 Promo bulan ini</div>
+        <div class="hero-title">Deep clean sneakers<br>cuma Rp 30.000</div>
+        <button class="hero-btn" onclick="switchScreen('booking')">Booking sekarang →</button>
+      </div>
+      <div class="section-title">Layanan kami <span class="see-all">Semua</span></div>
+      <div class="service-scroll">
+        <div class="service-card" onclick="selectService('Deep Clean',30000)"><div class="svc-icon"><i class="ti ti-droplet"></i></div><div class="svc-name">Deep Clean</div><div class="svc-price">Mulai Rp 30.000</div></div>
+        <div class="service-card" onclick="selectService('Premium Care',55000)"><div class="svc-icon"><i class="ti ti-sparkles"></i></div><div class="svc-name">Premium Care</div><div class="svc-price">Mulai Rp 55.000</div></div>
+        <div class="service-card" onclick="selectService('Repaint',80000)"><div class="svc-icon"><i class="ti ti-shield-check"></i></div><div class="svc-name">Repaint</div><div class="svc-price">Mulai Rp 80.000</div></div>
+        <div class="service-card" onclick="selectService('Unyellow',45000)"><div class="svc-icon"><i class="ti ti-basket"></i></div><div class="svc-name">Unyellow</div><div class="svc-price">Mulai Rp 45.000</div></div>
+      </div>
+      <div class="section-title">Order aktif <span class="see-all" onclick="switchScreen('tracking')">Lihat semua</span></div>
+      <div id="home-orders"><div class="empty-orders">Belum ada order aktif</div></div>
+    </div>
+
+    <!-- BOOKING -->
+    <div class="screen" id="screen-booking">
+      <div class="booking-hdr">
+        <div class="bk-step">Langkah <span id="step-num">1</span> dari 3</div>
+        <div class="bk-title" id="bk-title">Detail sepatu</div>
+        <div class="bk-sub" id="bk-sub">Isi info sepatu lo</div>
+        <div class="step-bars"><div class="step-bar active" id="sb1"></div><div class="step-bar" id="sb2"></div><div class="step-bar" id="sb3"></div></div>
+      </div>
+      <div class="bk-body">
+        <!-- Step 1 -->
+        <div id="bk1">
+          <div class="form-card">
+            <label class="form-label">Jenis sepatu</label>
+            <select class="form-select" id="shoe-type"><option>Sneakers / Kasual</option><option>Sepatu Kulit</option><option>Boots</option><option>Sepatu Anak</option></select>
+            <div style="margin-top:10px;"><label class="form-label">Merek & model</label><input class="form-input" id="shoe-brand" placeholder="Contoh: Nike Air Force 1" /></div>
+            <div style="margin-top:10px;"><label class="form-label">Warna dominan</label><input class="form-input" id="shoe-color" placeholder="Contoh: Putih, Hitam" /></div>
+            <div style="margin-top:10px;"><label class="form-label">Nomor WhatsApp</label><input class="form-input" id="shoe-phone" type="tel" placeholder="Contoh: 08123456789" /></div>
+            <div style="margin-top:10px;"><label class="form-label">Catatan kondisi (opsional)</label><input class="form-input" id="shoe-note" placeholder="Sol kuning, noda membandel..." /></div>
+          </div>
+          <button class="btn" onclick="goStep(2)">Lanjut →</button>
+        </div>
+        <!-- Step 2 -->
+        <div id="bk2" style="display:none;">
+          <div class="form-card">
+            <label class="form-label">Pilih layanan</label>
+            <div class="pills" id="svc-pills">
+              <div class="pill on" data-svc="Deep Clean" data-price="30000">Deep Clean</div>
+              <div class="pill" data-svc="Premium Care" data-price="55000">Premium Care</div>
+              <div class="pill" data-svc="Repaint" data-price="80000">Repaint</div>
+              <div class="pill" data-svc="Unyellow" data-price="45000">Unyellow</div>
+            </div>
+            <div style="margin-top:10px;background:var(--blue-light);border-radius:8px;padding:10px;" id="svc-info">
+              <div style="font-size:11px;color:var(--blue);font-weight:600;">Deep Clean mencakup:</div>
+              <div style="font-size:11px;color:var(--sub);margin-top:4px;line-height:1.7;">✓ Sikat bersih seluruh bagian<br>✓ Cuci dengan bahan ramah sepatu<br>✓ Bilas & pengeringan<br>✓ Repellent spray</div>
+            </div>
+          </div>
+          <div class="form-card">
+            <label class="form-label">Jadwal pengambilan</label>
+            <div class="form-row">
+              <div><label class="form-label" style="margin-bottom:4px;">Tanggal</label><input class="form-input" type="date" id="bk-date" /></div>
+              <div><label class="form-label" style="margin-bottom:4px;">Waktu</label><select class="form-select" id="bk-time"><option>09:00</option><option>11:00</option><option>14:00</option><option>16:00</option></select></div>
+            </div>
+            <div style="margin-top:10px;">
+              <label class="form-label">Metode pengiriman</label>
+              <div class="delv-opts">
+                <div class="delv-opt on" onclick="pickDelv(this,8000,'Pick-up & Antar')"><i class="ti ti-truck"></i><div class="delv-lbl">Pick-up & Antar<br><b style="color:var(--blue);font-size:10px;">+Rp 8.000</b></div></div>
+                <div class="delv-opt" onclick="pickDelv(this,0,'Antar sendiri')"><i class="ti ti-walk"></i><div class="delv-lbl">Antar sendiri<br><b style="color:var(--green);font-size:10px;">Gratis</b></div></div>
+              </div>
+            </div>
+            <div style="margin-top:10px;">
+              <label class="form-label">Alamat penjemputan</label>
+              <div id="booking-alamat-card" style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:flex-start;">
+                <div style="font-size:12px;color:var(--sub);flex:1;line-height:1.5;" id="booking-alamat-text">Belum ada alamat tersimpan</div>
+                <span style="color:var(--blue);cursor:pointer;font-size:11px;white-space:nowrap;margin-left:8px;" onclick="switchScreen('alamat')">+ Atur</span>
+              </div>
+            </div>
+          </div>
+          <div class="btn-row"><button class="btn btn-ghost" onclick="goStep(1)">← Kembali</button><button class="btn" onclick="goStep(3)">Lanjut →</button></div>
+        </div>
+        <!-- Step 3 -->
+        <div id="bk3" style="display:none;">
+          <div class="form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;">Ringkasan order</div>
+            <table style="width:100%;font-size:13px;border-collapse:collapse;">
+              <tr><td style="color:var(--muted);padding:5px 0;">Sepatu</td><td id="c-shoe" style="text-align:right;color:var(--text);"></td></tr>
+              <tr><td style="color:var(--muted);padding:5px 0;">Layanan</td><td id="c-svc" style="text-align:right;color:var(--text);"></td></tr>
+              <tr><td style="color:var(--muted);padding:5px 0;">Jadwal</td><td id="c-date" style="text-align:right;color:var(--text);"></td></tr>
+              <tr><td style="color:var(--muted);padding:5px 0;">Pengiriman</td><td id="c-delv" style="text-align:right;color:var(--text);"></td></tr>
+              <tr style="border-top:0.5px solid var(--border);"><td style="padding:10px 0 0;font-weight:700;">Total</td><td id="c-total" style="text-align:right;color:var(--blue);font-weight:700;font-size:17px;padding:10px 0 0;"></td></tr>
+            </table>
+          </div>
+          <div class="form-card" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="width:38px;height:38px;border-radius:10px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-award" style="color:var(--blue);font-size:20px;"></i></div>
+            <div><div style="font-size:13px;font-weight:600;color:var(--text);">Kamu dapat +30 poin!</div><div style="font-size:12px;color:var(--muted);">Total poin jadi <span id="c-pts">0</span></div></div>
+          </div>
+          <div class="btn-row"><button class="btn btn-ghost" onclick="goStep(2)">← Kembali</button><button class="btn" onclick="confirmBooking()">Konfirmasi ✓</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKING -->
+    <div class="screen" id="screen-tracking">
+      <div class="track-hdr">
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);">Lacak pesanan</div>
+        <div class="track-title">Status cucian</div>
+        <div class="track-sub">Order lo secara realtime</div>
+      </div>
+      <div id="tracking-orders" style="padding-top:16px;"></div>
+    </div>
+
+    <!-- DASHBOARD -->
+
+
+    <!-- LOYALTY -->
+    <div class="screen" id="screen-loyalty">
+      <div class="loy-hdr"><div><div style="font-size:20px;font-weight:700;color:var(--text);">Reward kamu</div><div style="font-size:13px;color:var(--muted);margin-top:2px;">Kumpulkan poin, tukar hadiah</div></div><i class="ti ti-gift" style="font-size:28px;color:var(--blue);"></i></div>
+      <div class="loy-banner">
+        <div class="loy-pts" id="loy-pts">0</div>
+        <div class="loy-label">poin terkumpul</div>
+        <div class="prog-labels"><span>Silver</span><span>Gold (1.000 poin)</span></div>
+        <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%;"></div></div>
+        <div class="loy-tier" id="loy-tier">Kumpulkan poin dari setiap order!</div>
+      </div>
+      <div class="section-title">Tukar poin</div>
+      <div class="reward-scroll">
+        <div class="reward-card"><div class="rw-badge">200 poin</div><span class="rw-emoji">🧹</span><div class="rw-name">Gratis deep clean</div><button class="btn-outline" style="margin-top:8px;width:100%;" onclick="redeem(200,'Gratis Deep Clean')">Tukar</button></div>
+        <div class="reward-card"><div class="rw-badge">300 poin</div><span class="rw-emoji">🚚</span><div class="rw-name">Gratis ongkir 3x</div><button class="btn-outline" style="margin-top:8px;width:100%;" onclick="redeem(300,'Gratis Ongkir 3x')">Tukar</button></div>
+        <div class="reward-card"><div class="rw-badge">500 poin</div><span class="rw-emoji">🎁</span><div class="rw-name">Diskon 50%</div><button class="btn-outline" style="margin-top:8px;width:100%;" onclick="redeem(500,'Diskon 50%')">Tukar</button></div>
+        <div class="reward-card"><div class="rw-badge">1.000 poin</div><span class="rw-emoji">✨</span><div class="rw-name">Gratis premium care</div><button class="btn-outline" style="margin-top:8px;width:100%;" onclick="redeem(1000,'Premium Care Gratis')">Tukar</button></div>
+      </div>
+      <div class="section-title">Riwayat poin</div>
+      <div id="pts-history"><div class="empty-orders">Belum ada riwayat poin</div></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="screen" id="screen-profile">
+      <div class="prof-hdr">
+        <div class="prof-av" id="prof-av">?</div>
+        <div class="prof-name" id="prof-name">-</div>
+        <div class="prof-email" id="prof-email">-</div>
+        <div class="prof-tier" id="prof-tier">⭐ Silver Member</div>
+      </div>
+      <div class="prof-menu">
+        <div class="menu-card">
+          <div class="menu-item" onclick="switchScreen('tracking')"><div class="menu-ico"><i class="ti ti-package"></i></div><div class="menu-lbl">Riwayat order</div><i class="ti ti-chevron-right menu-arr"></i></div>
+          <div class="menu-item" onclick="switchScreen('loyalty')"><div class="menu-ico"><i class="ti ti-gift"></i></div><div class="menu-lbl">Poin & reward</div><div class="menu-tag" style="background:var(--blue-light);color:var(--blue);" id="prof-pts">0 poin</div></div>
+          <div class="menu-item" onclick="switchScreen('alamat')"><div class="menu-ico"><i class="ti ti-map-pin"></i></div><div class="menu-lbl">Alamat tersimpan</div><i class="ti ti-chevron-right menu-arr"></i></div>
+        </div>
+        <div class="menu-card">
+          <div class="menu-item" onclick="showToast('✓ Notifikasi WhatsApp aktif')"><div class="menu-ico"><i class="ti ti-brand-whatsapp"></i></div><div class="menu-lbl">Notifikasi WhatsApp</div><div class="menu-tag" style="background:var(--green-bg);color:var(--green);">Aktif</div></div>
+          <div class="menu-item" onclick="showToast('Fitur segera hadir!')"><div class="menu-ico"><i class="ti ti-settings"></i></div><div class="menu-lbl">Pengaturan akun</div><i class="ti ti-chevron-right menu-arr"></i></div>
+          <div class="menu-item" onclick="showToast('Bantuan & FAQ dibuka')"><div class="menu-ico"><i class="ti ti-help-circle"></i></div><div class="menu-lbl">Bantuan & FAQ</div><i class="ti ti-chevron-right menu-arr"></i></div>
+        </div>
+        <div class="menu-card">
+          <div class="menu-item" onclick="doLogout()"><div class="menu-ico" style="background:#FCEBEB;"><i class="ti ti-logout" style="color:var(--red);"></i></div><div class="menu-lbl" style="color:var(--red);">Keluar</div></div>
+        </div>
+        <div style="text-align:center;padding:8px 0 4px;font-size:11px;color:var(--muted);">FreshKicks.id v2.0.0 · Clean • Care • Every Step</div>
+      </div>
+    </div>
+
+    <!-- ALAMAT -->
+    <div class="screen" id="screen-alamat">
+      <div class="home-header" style="background:var(--bg);padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <i class="ti ti-arrow-left" style="font-size:22px;color:var(--text);cursor:pointer;" onclick="switchScreen('profile')"></i>
+          <div>
+            <div style="font-size:18px;font-weight:700;color:var(--text);">Alamat tersimpan</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">Dipakai otomatis saat booking</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form tambah/edit alamat -->
+      <div style="padding:16px 20px 0;">
+        <div class="form-card">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">📍 Alamat utama</div>
+          <label class="form-label">Nama penerima</label>
+          <input class="form-input" id="addr-name" placeholder="Contoh: Java Fauzan" />
+          <div style="margin-top:10px;">
+            <label class="form-label">Nomor WhatsApp</label>
+            <input class="form-input" id="addr-phone" type="tel" placeholder="Contoh: 08123456789" />
+          </div>
+          <div style="margin-top:10px;">
+            <label class="form-label">Alamat lengkap</label>
+            <input class="form-input" id="addr-street" placeholder="Nama jalan, nomor rumah" />
+          </div>
+          <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label class="form-label">Kota</label>
+              <input class="form-input" id="addr-city" placeholder="Depok" />
+            </div>
+            <div>
+              <label class="form-label">Kode pos</label>
+              <input class="form-input" id="addr-zip" type="number" placeholder="16412" />
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <label class="form-label">Catatan untuk kurir (opsional)</label>
+            <input class="form-input" id="addr-note" placeholder="Contoh: Rumah warna biru, pagar hitam" />
+          </div>
+        </div>
+        <button class="btn" onclick="saveAlamat()">Simpan alamat</button>
+      </div>
+
+      <!-- Alamat tersimpan -->
+      <div class="section-title" style="padding-top:20px;">Alamat aktif</div>
+      <div id="saved-alamat" style="padding:0 20px;">
+        <div class="empty-orders">Belum ada alamat tersimpan</div>
+      </div>
+    </div>
+
+  </div><!-- /screen-wrap -->
+
+  <nav class="nav">
+    <div class="nav-item active" id="nav-home" onclick="switchScreen('home')"><i class="ti ti-home"></i><span>Beranda</span><div class="nav-dot"></div></div>
+    <div class="nav-item" id="nav-booking" onclick="switchScreen('booking')"><i class="ti ti-calendar-plus"></i><span>Booking</span><div class="nav-dot"></div></div>
+    <div class="nav-item" id="nav-tracking" onclick="switchScreen('tracking')"><i class="ti ti-map-pin"></i><span>Tracking</span><div class="nav-dot"></div></div>
+    <div class="nav-item" id="nav-loyalty" onclick="switchScreen('loyalty')"><i class="ti ti-gift"></i><span>Reward</span><div class="nav-dot"></div></div>
+    <div class="nav-item" id="nav-profile" onclick="switchScreen('profile')"><i class="ti ti-user"></i><span>Profil</span><div class="nav-dot"></div></div>
+  </nav>
+</div>
+
+<div class="loading" id="loading"><div class="spinner"></div><div class="loading-text" id="loading-text">Memuat...</div></div>
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDnEA0cew7zUoFi-w0lpJro7WuIsTnR_bg",
+    authDomain: "freshkicks-46ae3.firebaseapp.com",
+    projectId: "freshkicks-46ae3",
+    storageBucket: "freshkicks-46ae3.firebasestorage.app",
+    messagingSenderId: "123914521736",
+    appId: "1:123914521736:web:0a6a28b86a7dfe3779e33d"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  let currentUser = null;
+  let userPts = 0;
+  let unsubOrders = null;
+
+  // ===== SPLASH =====
+  setTimeout(() => {
+    document.getElementById('splash').style.opacity = '0';
+    setTimeout(() => document.getElementById('splash').style.display = 'none', 400);
+  }, 1800);
+
+  // ===== AUTH STATE =====
+  onAuthStateChanged(auth, async user => {
+    if (user) {
+      currentUser = user;
+      await loadUserData(user);
+      await loadAlamat(user.uid);
+      document.getElementById('auth-screen').classList.remove('active');
+      document.getElementById('main-app').style.display = 'flex';
+      listenOrders(user.uid);
+      loadDashboard();
+    } else {
+      currentUser = null;
+      if (unsubOrders) unsubOrders();
+      document.getElementById('main-app').style.display = 'none';
+      document.getElementById('auth-screen').classList.add('active');
+    }
+  });
+
+  // ===== LOAD USER DATA =====
+  async function loadUserData(user) {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    let data = snap.exists() ? snap.data() : { name: user.displayName || 'User', points: 0 };
+    userPts = data.points || 0;
+    const name = data.name || user.displayName || 'User';
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+    document.getElementById('home-greeting').textContent = `Hai, ${name.split(' ')[0]} 👋`;
+    document.getElementById('home-avatar').textContent = initials;
+    document.getElementById('prof-av').textContent = initials;
+    document.getElementById('prof-name').textContent = name;
+    document.getElementById('prof-email').textContent = user.email;
+    updatePtsUI();
+  }
+
+  // ===== LISTEN ORDERS REALTIME =====
+  function listenOrders(uid) {
+    const q = query(collection(db,'orders'), where('uid','==',uid), orderBy('createdAt','desc'));
+    unsubOrders = onSnapshot(q, snap => {
+      const orders = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      renderHomeOrders(orders);
+      renderTrackingOrders(orders);
+      // stats
+      const proses = orders.filter(o => o.status !== 'Selesai' && o.status !== 'Dibatalkan').length;
+      document.getElementById('stat-total').textContent = orders.length;
+      document.getElementById('stat-proses').textContent = proses;
+      document.getElementById('dash-total').textContent = orders.length;
+      document.getElementById('dash-proses').textContent = proses;
+      // revenue
+      const rev = orders.filter(o=>o.status==='Selesai').reduce((a,o)=>a+(o.total||0),0);
+      document.getElementById('dash-rev').textContent = 'Rp ' + rev.toLocaleString('id-ID');
+    });
+  }
+
+  function renderHomeOrders(orders) {
+    const el = document.getElementById('home-orders');
+    const aktif = orders.filter(o => o.status !== 'Selesai' && o.status !== 'Dibatalkan').slice(0,3);
+    if (!aktif.length) { el.innerHTML = '<div class="empty-orders">Belum ada order aktif<br><small>Yuk booking sekarang!</small></div>'; return; }
+    el.innerHTML = aktif.map(o => `
+      <div class="order-card" onclick="switchScreen('tracking')">
+        <div class="order-icon"><i class="ti ti-shoe"></i></div>
+        <div style="flex:1;"><div class="order-name">${o.brand||'Sepatu'}</div><div class="order-id">#${o.id.slice(-8).toUpperCase()} · ${o.service}</div></div>
+        <span class="badge ${statusBadge(o.status)}">${o.status}</span>
+      </div>`).join('');
+  }
+
+  function renderTrackingOrders(orders) {
+    const el = document.getElementById('tracking-orders');
+    if (!orders.length) { el.innerHTML = '<div class="empty-orders" style="padding-top:30px;">Belum ada order<br><small>Booking dulu yuk!</small></div>'; return; }
+    el.innerHTML = orders.map(o => `
+      <div class="track-card" style="margin-bottom:12px;">
+        <div class="shoe-row">
+          <div class="shoe-img"><i class="ti ti-shoe"></i></div>
+          <div style="flex:1;"><div class="shoe-name">${o.brand||'Sepatu'}</div><div class="shoe-id">#${o.id.slice(-8).toUpperCase()} · ${o.service}</div></div>
+          <span class="badge ${statusBadge(o.status)}">${o.status}</span>
+        </div>
+        <div class="timeline">${renderTimeline(o.status)}</div>
+      </div>`).join('');
+  }
+
+  function statusBadge(s) {
+    if (s==='Masuk'||s==='Inspeksi') return 'badge-pickup';
+    if (s==='Proses'||s==='Pengeringan') return 'badge-process';
+    if (s==='Selesai') return 'badge-done';
+    return 'badge-process';
+  }
+
+  const steps = ['Masuk','Inspeksi','Proses','Pengeringan','Selesai'];
+  const stepIcons = ['ti-inbox','ti-search','ti-droplet','ti-wind','ti-check'];
+  const stepLabels = ['Pesanan masuk','Inspeksi awal','Proses cuci','Pengeringan & QC','Selesai & siap ambil'];
+
+  function renderTimeline(status) {
+    const cur = steps.indexOf(status);
+    return steps.map((s,i) => {
+      const cls = i < cur ? 'done' : i === cur ? 'act' : 'pend';
+      const icon = i < cur ? 'ti-check' : stepIcons[i];
+      return `<div class="tl-item"><div class="tl-dot ${cls}"><i class="ti ${icon}"></i></div><div><div class="tl-step" ${i===cur?'style="color:var(--blue);"':''}>${stepLabels[i]}</div>${i===cur?'<div class="tl-time">Sedang berjalan</div>':''}</div></div>`;
+    }).join('');
+  }
+
+  // ===== LOAD DASHBOARD =====
+  async function loadDashboard() {
+    try {
+      const snap = await getDocs(collection(db,'users'));
+      document.getElementById('dash-users').textContent = snap.size;
+    } catch(e) {}
+  }
+
+  // ===== AUTH FUNCTIONS =====
+  window.doLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-pass').value;
+    const err   = document.getElementById('login-err');
+    if (!email||!pass) { err.textContent='Email & password wajib diisi'; return; }
+    showLoading('Masuk...');
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      err.textContent = '';
+    } catch(e) {
+      err.textContent = e.code==='auth/invalid-credential' ? 'Email atau password salah' : 'Gagal masuk, coba lagi';
+    } finally { hideLoading(); }
+  };
+
+  window.doRegister = async function() {
+    const name  = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const pass  = document.getElementById('reg-pass').value;
+    const err   = document.getElementById('reg-err');
+    if (!name||!email||!pass) { err.textContent='Semua field wajib diisi'; return; }
+    if (pass.length < 6) { err.textContent='Password minimal 6 karakter'; return; }
+    showLoading('Membuat akun...');
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(cred.user, { displayName: name });
+      await setDoc(doc(db,'users',cred.user.uid), { name, email, points: 0, createdAt: serverTimestamp() });
+      err.textContent = '';
+    } catch(e) {
+      err.textContent = e.code==='auth/email-already-in-use' ? 'Email sudah terdaftar' : 'Gagal daftar, coba lagi';
+    } finally { hideLoading(); }
+  };
+
+  window.doLogout = async function() {
+    showLoading('Keluar...');
+    await signOut(auth);
+    hideLoading();
+  };
+
+  // ===== BOOKING =====
+  window.confirmBooking = async function() {
+    if (!currentUser) return;
+    const brand = document.getElementById('shoe-brand').value || 'Sepatu';
+    const d = document.getElementById('bk-date').value;
+    const t = document.getElementById('bk-time').value;
+    showLoading('Menyimpan booking...');
+    try {
+      await addDoc(collection(db,'orders'), {
+        uid: currentUser.uid,
+        brand,
+        type: document.getElementById('shoe-type').value,
+        color: document.getElementById('shoe-color').value,
+        phone: document.getElementById('shoe-phone').value,
+        alamat: savedAlamat || null,
+        note: document.getElementById('shoe-note').value,
+        service: window._selSvc || 'Deep Clean',
+        price: window._selPrice || 30000,
+        delivery: window._delvLabel || 'Pick-up & Antar',
+        deliveryPrice: window._delvPrice || 8000,
+        total: (window._selPrice||30000) + (window._delvPrice||8000),
+        status: 'Masuk',
+        createdAt: serverTimestamp()
+      });
+      // Update points
+      userPts += 30;
+      await updateDoc(doc(db,'users',currentUser.uid), { points: userPts });
+      updatePtsUI();
+      // Add to history
+      addPtsHistory(`+30 poin — ${window._selSvc||'Deep Clean'}`, `${brand} · Booking berhasil`);
+      showToast('✓ Booking berhasil! Cek tracking order');
+      goStep(1);
+      switchScreen('tracking');
+    } catch(e) {
+      showToast('Gagal booking, coba lagi');
+    } finally { hideLoading(); }
+  };
+
+  // ===== POINTS =====
+  function updatePtsUI() {
+    document.getElementById('home-pts').textContent  = userPts;
+    document.getElementById('loy-pts').textContent   = userPts;
+    document.getElementById('prof-pts').textContent  = userPts + ' poin';
+    document.getElementById('c-pts').textContent     = userPts + 30;
+    const pct = Math.min((userPts/1000)*100,100);
+    document.getElementById('prog-fill').style.width = pct + '%';
+    const rem = Math.max(1000-userPts,0);
+    document.getElementById('loy-tier').textContent =
+      rem > 0 ? `Butuh ${rem} poin lagi untuk tier Gold ✨` : '🎉 Kamu sudah di tier Gold!';
+    document.getElementById('prof-tier').textContent =
+      userPts >= 1000 ? '🥇 Gold Member' : '⭐ Silver Member';
+  }
+
+  window.redeem = async function(cost, name) {
+    if (userPts < cost) { showToast('Poin tidak cukup!'); return; }
+    showLoading('Menukar poin...');
+    try {
+      userPts -= cost;
+      await updateDoc(doc(db,'users',currentUser.uid), { points: userPts });
+      updatePtsUI();
+      addPtsHistory(`-${cost} poin — Ditukar`, `${name} digunakan`);
+      showToast(`✓ Berhasil tukar ${name}!`);
+    } catch(e) { showToast('Gagal tukar poin'); }
+    finally { hideLoading(); }
+  };
+
+  function addPtsHistory(title, desc) {
+    const hist = document.getElementById('pts-history');
+    if (hist.querySelector('.empty-orders')) hist.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'hist-item';
+    const isPlus = title.startsWith('+');
+    el.innerHTML = `<div class="hist-icon" style="${isPlus?'':'background:var(--amber-bg);'}"><i class="ti ${isPlus?'ti-plus':'ti-minus'}" style="${isPlus?'':'color:var(--amber);'}"></i></div><div><div class="hist-title">${title}</div><div class="hist-desc">${desc}</div><div class="hist-time">Baru saja</div></div>`;
+    hist.insertBefore(el, hist.firstChild);
+  }
+
+  // ===== ALAMAT =====
+  let savedAlamat = null;
+
+  async function loadAlamat(uid) {
+    try {
+      const snap = await getDoc(doc(db,'users',uid));
+      if (snap.exists() && snap.data().alamat) {
+        savedAlamat = snap.data().alamat;
+        renderAlamat(savedAlamat);
+        updateBookingAlamat(savedAlamat);
+        // Auto-fill nomor WA di booking dari alamat
+        if (savedAlamat.phone) document.getElementById('shoe-phone').value = savedAlamat.phone;
+      }
+    } catch(e) { console.log('load alamat error', e); }
+  }
+
+  function renderAlamat(a) {
+    const el = document.getElementById('saved-alamat');
+    if (!a) { el.innerHTML = '<div class="empty-orders">Belum ada alamat tersimpan</div>'; return; }
+    el.innerHTML = `
+      <div style="background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">📍 ${a.name||'-'}</div>
+            <div style="font-size:12px;color:var(--sub);margin-top:4px;line-height:1.6;">
+              ${a.street||''}<br>${a.city||''} ${a.zip||''}
+              ${a.note?`<br><i style="color:var(--muted);">📝 ${a.note}</i>`:''}
+            </div>
+            <div style="font-size:12px;color:var(--blue);margin-top:4px;">📱 ${a.phone||'-'}</div>
+          </div>
+          <span style="font-size:11px;color:var(--blue);cursor:pointer;white-space:nowrap;" onclick="editAlamat()">✏️ Edit</span>
+        </div>
+      </div>`;
+  }
+
+  function updateBookingAlamat(a) {
+    const el = document.getElementById('booking-alamat-text');
+    if (!el) return;
+    if (!a) { el.textContent = 'Belum ada alamat tersimpan'; return; }
+    el.textContent = `${a.name} · ${a.street}, ${a.city}`;
+  }
+
+  window.editAlamat = function() {
+    if (!savedAlamat) return;
+    document.getElementById('addr-name').value  = savedAlamat.name  || '';
+    document.getElementById('addr-phone').value = savedAlamat.phone || '';
+    document.getElementById('addr-street').value= savedAlamat.street|| '';
+    document.getElementById('addr-city').value  = savedAlamat.city  || '';
+    document.getElementById('addr-zip').value   = savedAlamat.zip   || '';
+    document.getElementById('addr-note').value  = savedAlamat.note  || '';
+  };
+
+  window.saveAlamat = async function() {
+    if (!currentUser) return;
+    const alamat = {
+      name:   document.getElementById('addr-name').value.trim(),
+      phone:  document.getElementById('addr-phone').value.trim(),
+      street: document.getElementById('addr-street').value.trim(),
+      city:   document.getElementById('addr-city').value.trim(),
+      zip:    document.getElementById('addr-zip').value.trim(),
+      note:   document.getElementById('addr-note').value.trim(),
+    };
+    if (!alamat.name || !alamat.street) { showToast('Nama & alamat wajib diisi!'); return; }
+    showLoading('Menyimpan alamat...');
+    try {
+      await updateDoc(doc(db,'users',currentUser.uid), { alamat });
+      savedAlamat = alamat;
+      renderAlamat(alamat);
+      updateBookingAlamat(alamat);
+      // Auto update nomor WA di booking
+      if (alamat.phone) document.getElementById('shoe-phone').value = alamat.phone;
+      showToast('✓ Alamat berhasil disimpan!');
+      switchScreen('profile');
+    } catch(e) { showToast('Gagal simpan alamat'); }
+    finally { hideLoading(); }
+  };
+
+  // expose globals
+
+  window._selSvc = 'Deep Clean'; window._selPrice = 30000;
+  window._delvPrice = 8000; window._delvLabel = 'Pick-up & Antar';
+
+  window.selectService = function(svc, price) {
+    window._selSvc = svc; window._selPrice = price;
+    switchScreen('booking'); goStep(2);
+    document.querySelectorAll('#svc-pills .pill').forEach(p => p.classList.toggle('on', p.dataset.svc===svc));
+  };
+</script>
+
+<script>
+  // ===== SCREEN SWITCHER =====
+  const whiteScreens = ['loyalty','profile'];
+  function switchScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('screen-'+name).classList.add('active');
+    const nav = document.getElementById('nav-'+name);
+    if (nav) nav.classList.add('active');
+    document.getElementById('screen-wrap').scrollTop = 0;
+    document.getElementById('status-spacer').className = 'status-spacer' + (whiteScreens.includes(name)?' white':'');
+  }
+
+  // ===== AUTH TABS =====
+  function switchAuth(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+    document.getElementById('auth-login').classList.toggle('active', tab==='login');
+    document.getElementById('auth-register').classList.toggle('active', tab==='register');
+  }
+
+  // ===== BOOKING STEPS =====
+  const svcDetails = {
+    'Deep Clean':'✓ Sikat bersih seluruh bagian<br>✓ Cuci bahan ramah sepatu<br>✓ Bilas & pengeringan<br>✓ Repellent spray',
+    'Premium Care':'✓ Deep clean lengkap<br>✓ Restorasi warna<br>✓ Conditioning bahan<br>✓ Packaging premium',
+    'Repaint':'✓ Konsultasi warna<br>✓ Persiapan permukaan<br>✓ Cat khusus sepatu<br>✓ Finishing & proteksi',
+    'Unyellow':'✓ Treatment anti-kuning sol<br>✓ Oksidasi reversal<br>✓ UV protection<br>✓ Hasil dalam 24 jam'
+  };
+
+  document.querySelectorAll('#svc-pills .pill').forEach(p => {
+    p.addEventListener('click', function() {
+      document.querySelectorAll('#svc-pills .pill').forEach(x => x.classList.remove('on'));
+      this.classList.add('on');
+      window._selSvc = this.dataset.svc;
+      window._selPrice = parseInt(this.dataset.price);
+      document.getElementById('svc-info').innerHTML = `<div style="font-size:11px;color:var(--blue);font-weight:600;">${window._selSvc} mencakup:</div><div style="font-size:11px;color:var(--sub);margin-top:4px;line-height:1.7;">${svcDetails[window._selSvc]}</div>`;
+    });
+  });
+
+  function pickDelv(el, price, label) {
+    document.querySelectorAll('.delv-opt').forEach(o => o.classList.remove('on'));
+    el.classList.add('on');
+    window._delvPrice = price; window._delvLabel = label;
+  }
+
+  function goStep(n) {
+    ['bk1','bk2','bk3'].forEach((id,i) => document.getElementById(id).style.display = i+1===n?'block':'none');
+    document.getElementById('step-num').textContent = n;
+    const titles = {1:'Detail sepatu',2:'Pilih layanan',3:'Konfirmasi'};
+    const subs   = {1:'Isi info sepatu lo',2:'Pilih layanan & jadwal',3:'Cek sebelum konfirmasi'};
+    document.getElementById('bk-title').textContent = titles[n];
+    document.getElementById('bk-sub').textContent   = subs[n];
+    for(let i=1;i<=3;i++) document.getElementById('sb'+i).classList.toggle('active',i<=n);
+    if(n===3) fillConfirm();
+    document.getElementById('screen-wrap').scrollTop = 0;
+  }
+
+  function fillConfirm() {
+    const brand = document.getElementById('shoe-brand').value || 'Sepatu';
+    const d = document.getElementById('bk-date').value;
+    const t = document.getElementById('bk-time').value;
+    const dateStr = d ? new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})+', '+t : '-';
+    document.getElementById('c-shoe').textContent  = brand;
+    document.getElementById('c-svc').textContent   = window._selSvc||'Deep Clean';
+    document.getElementById('c-date').textContent  = dateStr;
+    document.getElementById('c-delv').textContent  = window._delvLabel||'Pick-up & Antar';
+    document.getElementById('c-total').textContent = 'Rp '+((window._selPrice||30000)+(window._delvPrice||8000)).toLocaleString('id-ID');
+  }
+
+  // ===== LOADING =====
+  function showLoading(text) { document.getElementById('loading-text').textContent=text||'Memuat...'; document.getElementById('loading').classList.add('show'); }
+  function hideLoading() { document.getElementById('loading').classList.remove('show'); }
+
+  // ===== TOAST =====
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.classList.remove('show'), 2500);
+  }
+
+  // ===== PWA =====
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+</script>
+</body>
+</html>
