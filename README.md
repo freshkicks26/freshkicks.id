@@ -55,7 +55,7 @@ freshkicks.id/
 ├── logo.png
 ├── manifest.json
 ├── sw.js
-├── Diagram_FreshKicks_Kelompok2.drawio
+├── Kelompok2_Diagram_FreshKicks.drawio
 └── SRS_FreshKicks_Kelompok2.pdf
 ```
 
