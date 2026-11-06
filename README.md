@@ -112,7 +112,7 @@ http://localhost:8000/admin.html
 | File | Keterangan |
 |---|---|
 | SRS_FreshKicks_Kelompok2.pdf | Dokumen spesifikasi kebutuhan perangkat lunak |
-| Diagram_FreshKicks_Kelompok2.drawio | Diagram perancangan sistem |
+| Kelompok2_Diagram_FreshKicks.drawio | Diagram perancangan sistem |
 
 ## Keamanan
 
